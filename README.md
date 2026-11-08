@@ -10,9 +10,9 @@ Output PDFs are named after the **source file** (e.g. `MyScan.pdf` → `MyScan.p
 
 ## Install
 
-### Homebrew (recommended — installs Tesseract automatically)
+Requires [Go](https://go.dev/dl/) 1.22+ to build. [Tesseract](https://github.com/tesseract-ocr/tesseract) is only needed for **ocr** / full **run** (phases through **assemble** work without it). Put `tesseract` on your `PATH` and verify with `tesseract --version`.
 
-Homebrew pulls in [Tesseract](https://github.com/tesseract-ocr/tesseract) via `depends_on "tesseract"`.
+### macOS (Homebrew — installs Tesseract automatically)
 
 ```bash
 # From a clone of this repo:
@@ -23,26 +23,59 @@ brew tap dorknightofthesole/pdfubar https://github.com/dorknightofthesole/pdfuba
 brew install --HEAD dorknightofthesole/pdfubar/pdfubar
 ```
 
-After a tagged release, add `url` / `sha256` to [Formula/pdfubar.rb](Formula/pdfubar.rb) and install without `--HEAD`.
+`depends_on "tesseract"` pulls Tesseract in automatically. After a tagged release, add `url` / `sha256` to [Formula/pdfubar.rb](Formula/pdfubar.rb) and install without `--HEAD`.
 
-### From source
+### Linux
 
-Requires [Go](https://go.dev/dl/) 1.22+.
+Build from source, then install Tesseract from your distro:
 
 ```bash
 git clone https://github.com/dorknightofthesole/pdfubar.git
 cd pdfubar
-make build
-# binary: ./bin/pdfubar
+go build -o bin/pdfubar ./cmd/pdfubar
+# or: make build
 ```
-
-For OCR when not using Homebrew:
 
 ```bash
-brew install tesseract
+# Debian / Ubuntu
+sudo apt update
+sudo apt install tesseract-ocr
+
+# Fedora
+sudo dnf install tesseract
+
+# Arch
+sudo pacman -S tesseract tesseract-data-eng
 ```
 
-Phases through **assemble** need no Tesseract. Only **ocr** / full **run** require it on `PATH`.
+Optional: [Linuxbrew](https://docs.brew.sh/Homebrew-on-Linux) can use the same formula as macOS (`brew install --HEAD ./Formula/pdfubar.rb`), which will also install Tesseract.
+
+### Windows
+
+1. Install [Go](https://go.dev/dl/) and Git.
+2. Build pdfubar in PowerShell or Git Bash:
+
+```powershell
+git clone https://github.com/dorknightofthesole/pdfubar.git
+cd pdfubar
+go build -o bin/pdfubar.exe ./cmd/pdfubar
+```
+
+3. Install Tesseract (pick one):
+
+```powershell
+winget install UB-Mannheim.TesseractOCR
+# or: choco install tesseract
+# or: scoop install tesseract
+```
+
+If you used the UB Mannheim installer, add `C:\Program Files\Tesseract-OCR` to your **PATH**, then open a new terminal and run `tesseract --version`.
+
+```powershell
+.\bin\pdfubar.exe run .\MyScan.pdf
+```
+
+There is no first-party Windows installer yet; from-source (or a future GitHub Release binary) is the path for now.
 
 ## Usage
 
