@@ -24,7 +24,7 @@ Or on Debian/Ubuntu:
   sudo apt-get install tesseract-ocr
 `
 
-// Run OCRs each page image with tesseract (PDF + optional hOCR) and merges to book.ocr.pdf.
+// Run OCRs each page image with tesseract (PDF + optional hOCR) and merges to <stem>.ocr.pdf.
 func Run(root string, lang string, writeHOCR bool) error {
 	if lang == "" {
 		lang = "eng"
@@ -79,7 +79,7 @@ func Run(root string, lang string, writeHOCR bool) error {
 		fmt.Printf("ocr %s (%d/%d)\n", filepath.Base(page), i+1, len(pages))
 	}
 
-	out := job.BookOCRPDFPath(root)
+	out := j.OCRPDFPath(root)
 	// Avoid pdfcpu trying to create ~/Library/Application Support/pdfcpu.
 	api.DisableConfigDir()
 	conf := model.NewDefaultConfiguration()

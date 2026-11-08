@@ -79,7 +79,7 @@ func main() {
 
 	assembleCmd := &cobra.Command{
 		Use:   "assemble",
-		Short: "Build book.pdf from page images",
+		Short: "Build <source-stem>.pdf from page images",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := requireJob(jobDir)
 			if err != nil {
@@ -93,7 +93,7 @@ func main() {
 
 	ocrCmd := &cobra.Command{
 		Use:   "ocr",
-		Short: "OCR page images into book.ocr.pdf (requires tesseract)",
+		Short: "OCR page images into <source-stem>.ocr.pdf (requires tesseract)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := requireJob(jobDir)
 			if err != nil {
@@ -167,25 +167,9 @@ func resolveOut(outDir, inputPDF string) (string, error) {
 	if outDir != "" {
 		return filepath.Abs(outDir)
 	}
-	stem := strings.TrimSuffix(filepath.Base(inputPDF), filepath.Ext(inputPDF))
-	stem = sanitize(stem)
-	if stem == "" {
+	stem := job.StemFromPath(inputPDF)
+	if stem == "book" && strings.TrimSpace(filepath.Base(inputPDF)) == "" {
 		stem = fmt.Sprintf("job-%d", time.Now().Unix())
 	}
 	return filepath.Abs(filepath.Join("work", stem))
-}
-
-func sanitize(s string) string {
-	s = strings.Map(func(r rune) rune {
-		switch {
-		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
-			return r
-		default:
-			return '-'
-		}
-	}, s)
-	for strings.Contains(s, "--") {
-		s = strings.ReplaceAll(s, "--", "-")
-	}
-	return strings.Trim(s, "-")
 }

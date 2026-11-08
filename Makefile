@@ -11,13 +11,17 @@ build:
 tidy:
 	go mod tidy
 
-# Full pipeline including OCR (requires: brew install tesseract)
+# Full pipeline including OCR (requires tesseract on PATH)
 run-sample: build
 	./$(BIN) run $(SAMPLE) --out $(JOB)
 
 # Split/assemble only
 run-sample-no-ocr: build
 	./$(BIN) run $(SAMPLE) --out $(JOB) --skip-ocr
+
+# Local Homebrew install (pulls tesseract via depends_on)
+brew-install:
+	brew install --HEAD --formula ./Formula/pdfubar.rb
 
 clean:
 	rm -rf work bin

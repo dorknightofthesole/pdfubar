@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -14,20 +15,19 @@ const (
 	SpreadsDir    = "spreads"
 	OverlaysDir   = "overlays"
 	PagesDir      = "pages"
-	BookPDF       = "book.pdf"
-	BookOCRPDF    = "book.ocr.pdf"
 	DefaultDPI    = 300
 )
 
 // Job describes a processing workspace for one input PDF.
 type Job struct {
-	ID         string    `json:"id"`
-	InputPDF   string    `json:"input_pdf"`
-	DPI        int       `json:"dpi"`
-	SpreadCount int      `json:"spread_count"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID          string    `json:"id"`
+	InputPDF    string    `json:"input_pdf"`
+	OutputBase  string    `json:"output_base"` // stem of source PDF, used for output filenames
+	DPI         int       `json:"dpi"`
+	SpreadCount int       `json:"spread_count"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // BBox is [x, y, w, h] in image pixel coordinates.
@@ -71,8 +71,51 @@ func JobPath(root string) string      { return filepath.Join(root, JobFileName) 
 func PagesJSONPath(root string) string {
 	return filepath.Join(root, PagesFileName)
 }
-func BookPDFPath(root string) string    { return filepath.Join(root, BookPDF) }
-func BookOCRPDFPath(root string) string { return filepath.Join(root, BookOCRPDF) }
+// OutputStem is the sanitized basename of the source PDF (no extension).
+func (j *Job) OutputStem() string {
+	if j != nil && j.OutputBase != "" {
+		return j.OutputBase
+	}
+	if j != nil && j.InputPDF != "" {
+		return StemFromPath(j.InputPDF)
+	}
+	return "book"
+}
+
+// AssembledPDFPath is <stem>.pdf inside the job directory.
+func (j *Job) AssembledPDFPath(root string) string {
+	return filepath.Join(root, j.OutputStem()+".pdf")
+}
+
+// OCRPDFPath is <stem>.ocr.pdf inside the job directory.
+func (j *Job) OCRPDFPath(root string) string {
+	return filepath.Join(root, j.OutputStem()+".ocr.pdf")
+}
+
+// StemFromPath returns a filesystem-safe stem from a PDF path.
+func StemFromPath(path string) string {
+	stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	stem = sanitizeStem(stem)
+	if stem == "" {
+		return "book"
+	}
+	return stem
+}
+
+func sanitizeStem(s string) string {
+	s = strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
+			return r
+		default:
+			return '-'
+		}
+	}, s)
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+	return strings.Trim(s, "-")
+}
 
 func EnsureLayout(root string) error {
 	for _, d := range []string{SpreadsPath(root), OverlaysPath(root), PagesPath(root)} {
@@ -92,12 +135,13 @@ func New(root, inputPDF string, dpi int) (*Job, error) {
 	}
 	now := time.Now().UTC()
 	j := &Job{
-		ID:        filepath.Base(root),
-		InputPDF:  inputPDF,
-		DPI:       dpi,
-		Status:    "created",
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:         filepath.Base(root),
+		InputPDF:   inputPDF,
+		OutputBase: StemFromPath(inputPDF),
+		DPI:        dpi,
+		Status:     "created",
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 	if err := SaveJob(root, j); err != nil {
 		return nil, err

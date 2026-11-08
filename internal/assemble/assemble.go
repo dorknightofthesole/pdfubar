@@ -14,7 +14,7 @@ const (
 	pageHeightPt = 9.0 * 72.0 // 9 inches
 )
 
-// Run builds book.pdf from pages/*.png (one image per page).
+// Run builds <source-stem>.pdf from pages/*.png (one image per page).
 func Run(root string) error {
 	j, err := job.LoadJob(root)
 	if err != nil {
@@ -47,7 +47,7 @@ func Run(root string) error {
 		fmt.Printf("assembled %s\n", filepath.Base(path))
 	}
 
-	out := job.BookPDFPath(root)
+	out := j.AssembledPDFPath(root)
 	if err := pdf.OutputFileAndClose(out); err != nil {
 		return fmt.Errorf("write %s: %w", out, err)
 	}
